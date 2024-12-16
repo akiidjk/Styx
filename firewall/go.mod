@@ -1,3 +1,3 @@
-module github.com/akiidjk/NSWG-Aki
+module github.com/akiidjk/fw-ngwf
 
 go 1.23.4
