@@ -1,0 +1,7 @@
+
+# Env
+webui/.env
+
+# Bin
+webui/bin
+firewall/bin
