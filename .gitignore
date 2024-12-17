@@ -1,7 +1,12 @@
 
 # Env
-webui/.env
+internal/web/.env
 
 # Bin
-webui/bin
-firewall/bin
+internal/web/bin
+internal/firewall/bin
+
+
+# Web dump
+internal/web/tmp
+internal/web/*.db
