@@ -1,16 +1,30 @@
 package main
 
 import (
+	"fmt"
 	"log"
-	"net"
 	"os"
-	"os/signal"
-	"time"
 
-	"github.com/akiidjk/fw-ngfw/internal/firewall/ebpf"
-	"github.com/cilium/ebpf/link"
+	ebpfmoduleuser "github.com/akiidjk/fw-ngfw/internal/ebpf/ebpf_module_user"
+	"github.com/akiidjk/fw-ngfw/internal/utils"
+	"github.com/akiidjk/fw-ngfw/internal/utils/logger"
 	"github.com/cilium/ebpf/rlimit"
 )
+
+func init() {
+	logger.SetLevel(0)
+	fmt.Print(utils.Magenta + `
+███████╗████████╗██╗   ██╗██╗  ██╗    ███████╗██╗██████╗ ███████╗██╗    ██╗ █████╗ ██╗     ██╗
+██╔════╝╚══██╔══╝╚██╗ ██╔╝╚██╗██╔╝    ██╔════╝██║██╔══██╗██╔════╝██║    ██║██╔══██╗██║     ██║
+███████╗   ██║    ╚████╔╝  ╚███╔╝     █████╗  ██║██████╔╝█████╗  ██║ █╗ ██║███████║██║     ██║
+╚════██║   ██║     ╚██╔╝   ██╔██╗     ██╔══╝  ██║██╔══██╗██╔══╝  ██║███╗██║██╔══██║██║     ██║
+███████║   ██║      ██║   ██╔╝ ██╗    ██║     ██║██║  ██║███████╗╚███╔███╔╝██║  ██║███████╗███████╗
+╚══════╝   ╚═╝      ╚═╝   ╚═╝  ╚═╝    ╚═╝     ╚═╝╚═╝  ╚═╝╚══════╝ ╚══╝╚══╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+
+	created by @akiidjk
+
+` + utils.Reset)
+}
 
 func main() {
 	// Remove resource limits for kernels <5.11.
@@ -18,48 +32,7 @@ func main() {
 		log.Fatal("Removing memlock:", err)
 	}
 
-	// Load the compiled eBPF ELF and load it into the kernel.
-	var objs ebpf.CounterObjects
-	if err := ebpf.LoadCounterObjects(&objs, nil); err != nil {
-		log.Fatal("Loading eBPF objects:", err)
-	}
-	defer objs.Close()
-
-	ifname := "enp5s0" // Change this to an interface on your machine.
-	iface, err := net.InterfaceByName(ifname)
-	if err != nil {
-		log.Fatalf("Getting interface %s: %s", ifname, err)
-	}
-
-	// Attach count_packets to the network interface.
-	link, err := link.AttachXDP(link.XDPOptions{
-		Program:   objs.CountPackets,
-		Interface: iface.Index,
-	})
-	if err != nil {
-		log.Fatal("Attaching XDP:", err)
-	}
-	defer link.Close()
-
-	log.Printf("Counting incoming packets on %s..", ifname)
-
-	// Periodically fetch the packet counter from PktCount,
-	// exit the program when interrupted.
-	tick := time.Tick(time.Second)
-	stop := make(chan os.Signal, 5)
-	signal.Notify(stop, os.Interrupt)
-	for {
-		select {
-		case <-tick:
-			var count uint64
-			err := objs.PktCount.Lookup(uint32(0), &count)
-			if err != nil {
-				log.Fatal("Map lookup:", err)
-			}
-			log.Printf("Received %d packets", count)
-		case <-stop:
-			log.Print("Received signal, exiting..")
-			return
-		}
-	}
+	ifname := os.Args[1]
+	ebpfmoduleuser.Collect(ifname)
+	// ebpfmoduleuser.Count()
 }
