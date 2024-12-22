@@ -4,7 +4,10 @@ internal/web/.env
 
 # Bin
 internal/web/bin
-internal/firewall/bin
+bin
+
+#Logs
+logs
 
 
 # Web dump
