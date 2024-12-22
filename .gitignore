@@ -10,9 +10,9 @@ bin
 logs
 
 # Generated files
-internal/ebpf/generated
+internal/ebpf/generated/*
+!internal/ebpf/generated/
 !internal/ebpf/generated/gen.go
-!internal/ebpf/generated/.gitkeep
 
 # Web dump
 internal/web/tmp
