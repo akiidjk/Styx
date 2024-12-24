@@ -4,7 +4,6 @@ internal/web/.env
 
 # Bin
 internal/web/bin
-bin
 
 #Logs
 logs
