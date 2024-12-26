@@ -1,9 +1,10 @@
 package utils
 
 import (
-	"log"
 	"net"
+	"os"
 
+	"github.com/akiidjk/styx/internal/utils/logger"
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
 )
@@ -11,7 +12,8 @@ import (
 func LinkInterface(ifname string, program *ebpf.Program) link.Link {
 	iface, err := net.InterfaceByName(ifname)
 	if err != nil {
-		log.Fatalf("Getting interface %s: %s", ifname, err)
+		logger.Fatal("Getting interface ", ifname, ": ", err)
+		os.Exit(1)
 	}
 
 	link, err := link.AttachXDP(link.XDPOptions{
@@ -19,7 +21,8 @@ func LinkInterface(ifname string, program *ebpf.Program) link.Link {
 		Interface: iface.Index,
 	})
 	if err != nil {
-		log.Fatal("Attaching XDP:", err)
+		logger.Fatal("Attaching XDP:", err)
+		os.Exit(1)
 	}
 
 	return link
