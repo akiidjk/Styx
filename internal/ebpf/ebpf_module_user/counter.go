@@ -5,16 +5,17 @@ import (
 	"os/signal"
 	"time"
 
-	ebpfModules "github.com/akiidjk/fw-ngfw/internal/ebpf/generated"
-	"github.com/akiidjk/fw-ngfw/internal/utils"
-	"github.com/akiidjk/fw-ngfw/internal/utils/logger"
+	ebpfModules "github.com/akiidjk/styx/internal/ebpf/generated"
+	"github.com/akiidjk/styx/internal/utils"
+	"github.com/akiidjk/styx/internal/utils/logger"
 )
 
 func Count() {
 	// Load the compiled eBPF ELF and load it into the kernel.
 	var objs ebpfModules.CounterObjects
 	if err := ebpfModules.LoadCounterObjects(&objs, nil); err != nil {
-		logger.Error("Loading eBPF objects:", err)
+		logger.Fatal("Loading eBPF objects:", err)
+		os.Exit(1)
 	}
 	defer objs.Close()
 
@@ -33,7 +34,8 @@ func Count() {
 			var count uint64
 			err := objs.PktCount.Lookup(uint32(0), &count)
 			if err != nil {
-				logger.Error("Map lookup:", err)
+				logger.Fatal("Map lookup:", err)
+				os.Exit(1)
 			}
 			logger.Info("Received", count, "packets")
 		case <-stop:
