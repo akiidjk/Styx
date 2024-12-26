@@ -60,6 +60,12 @@ var logFile *os.File
 
 func init() {
 
+	eiud := os.Geteuid()
+	if eiud != 0 {
+		log.Fatal("Remember to run the program with `sudo` or with root")
+		os.Exit(1)
+	}
+
 	newpath := filepath.Join("/", "var", "log", logDir)
 	err := os.MkdirAll(newpath, os.ModePerm)
 	pathLogs := filepath.Join(newpath, logFilename)
