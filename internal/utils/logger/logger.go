@@ -54,7 +54,7 @@ type Logger struct {
 }
 
 var logDir string = "styx"
-var logFilename string = time.Now().Local().Format("02-01-2006_15-04-05") + ".log"
+var logFilename string = time.Now().Local().Format("20-01-2000_01-01-01") + ".log"
 var logger *Logger
 var logFile *os.File
 
