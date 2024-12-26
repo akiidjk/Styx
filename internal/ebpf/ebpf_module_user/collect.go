@@ -7,9 +7,9 @@ import (
 	"os"
 	"os/signal"
 
-	ebpfModules "github.com/akiidjk/fw-ngfw/internal/ebpf/generated"
-	"github.com/akiidjk/fw-ngfw/internal/utils"
-	"github.com/akiidjk/fw-ngfw/internal/utils/logger"
+	ebpfModules "github.com/akiidjk/styx/internal/ebpf/generated"
+	"github.com/akiidjk/styx/internal/utils"
+	"github.com/akiidjk/styx/internal/utils/logger"
 	"github.com/cilium/ebpf/ringbuf"
 )
 
@@ -24,7 +24,7 @@ type packetInfo struct {
 func Collect(ifname string) {
 	var objs ebpfModules.CollecterObjects
 	if err := ebpfModules.LoadCollecterObjects(&objs, nil); err != nil {
-		logger.Error("Loading eBPF objects:", err)
+		logger.Fatal("Loading eBPF objects:", err)
 	}
 	defer objs.Close()
 
@@ -38,7 +38,8 @@ func Collect(ifname string) {
 
 	rd, err := ringbuf.NewReader(objs.PktData)
 	if err != nil {
-		logger.Error("Failed to open ringbuf reader: ", err)
+		logger.Fatal("Failed to open ringbuf reader: ", err)
+		os.Exit(1)
 	}
 	defer rd.Close()
 
@@ -56,13 +57,13 @@ func Collect(ifname string) {
 		record, err := rd.Read()
 
 		if err != nil {
-			logger.Error("Error reading from ringbuf: ", err)
+			logger.Warning("Error reading from ringbuf: ", err)
 			continue
 		}
 
 		var data packetInfo
 		if err := binary.Read(bytes.NewReader(record.RawSample), binary.LittleEndian, &data); err != nil {
-			logger.Error("Error decoding data: ", err)
+			logger.Warning("Error decoding data: ", err)
 			continue
 		}
 
