@@ -9,7 +9,7 @@ GO_GENERATE := $(GO_CMD) generate
 GO_CLEAN := $(GO_CMD) clean
 GO_FILES := $(shell find . -name '*.go' -not -path './vendor/*')
 BUILD_DIR := bin
-MAIN_FILE := cmd/main.go
+MAIN_FILE := main.go
 GENERATE_DIR := internal/ebpf/generated
 CONVERT_SCRIPT := convert_to_public.sh
 OS := $(shell uname -s)
@@ -75,9 +75,6 @@ vendor:
 	@$(GO_CMD) mod tidy
 	@$(GO_CMD) mod vendor
 	@echo -e "$(GREEN)✅ Vendor dependencies ready!$(RESET)"
-
-
-
 
 # Help menu
 help:
