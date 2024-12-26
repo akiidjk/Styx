@@ -5,10 +5,34 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
+	"time"
 	"unique"
-
-	"github.com/akiidjk/fw-ngfw/internal/utils"
 )
+
+type Colors struct {
+	Reset   string
+	Red     string
+	Green   string
+	Yellow  string
+	Blue    string
+	Magenta string
+	Cyan    string
+	Gray    string
+	White   string
+}
+
+var DefaultColors = Colors{
+	Reset:   "\033[0m",
+	Red:     "\033[31m",
+	Green:   "\033[32m",
+	Yellow:  "\033[33m",
+	Blue:    "\033[34m",
+	Magenta: "\033[35m",
+	Cyan:    "\033[36m",
+	Gray:    "\033[37m",
+	White:   "\033[97m",
+}
 
 // Log levels
 const (
@@ -26,14 +50,21 @@ type Logger struct {
 	infoLogger  *log.Logger
 	succeLogger *log.Logger
 	warnLogger  *log.Logger
-	errorLogger *log.Logger
+	fatalLogger *log.Logger
 }
 
+var logDir string = "styx"
+var logFilename string = time.Now().Local().Format("02-01-2006_15-04-05") + ".log"
 var logger *Logger
 var logFile *os.File
 
 func init() {
-	logFile, err := os.OpenFile("logs/styx.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+
+	newpath := filepath.Join("/", "var", "log", logDir)
+	err := os.MkdirAll(newpath, os.ModePerm)
+	pathLogs := filepath.Join(newpath, logFilename)
+
+	logFile, err := os.OpenFile(pathLogs, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -42,11 +73,11 @@ func init() {
 
 	logger = &Logger{
 		Level:       InfoLevel,
-		debugLogger: log.New(multiWriter, utils.Gray+"[=] DEBUG: "+utils.White, log.LstdFlags),
-		infoLogger:  log.New(multiWriter, utils.Cyan+"[*] INFO: "+utils.White, log.LstdFlags),
-		succeLogger: log.New(multiWriter, utils.Green+"[+] SUCCESS: "+utils.White, log.LstdFlags),
-		warnLogger:  log.New(multiWriter, utils.Yellow+"[/] WARN: "+utils.White, log.LstdFlags),
-		errorLogger: log.New(multiWriter, utils.Red+"[//] ERROR: "+utils.White, log.LstdFlags),
+		debugLogger: log.New(multiWriter, DefaultColors.Gray+"[=] DEBUG: "+DefaultColors.White, log.LstdFlags),
+		infoLogger:  log.New(multiWriter, DefaultColors.Cyan+"[*] INFO: "+DefaultColors.White, log.LstdFlags),
+		succeLogger: log.New(multiWriter, DefaultColors.Green+"[+] SUCCESS: "+DefaultColors.White, log.LstdFlags),
+		warnLogger:  log.New(multiWriter, DefaultColors.Yellow+"[/] WARN: "+DefaultColors.White, log.LstdFlags),
+		fatalLogger: log.New(multiWriter, DefaultColors.Red+"[//] ERROR: "+DefaultColors.White, log.LstdFlags),
 	}
 }
 
@@ -85,8 +116,8 @@ func Warning(message ...any) {
 	}
 }
 
-func Error(message ...any) {
+func Fatal(message ...any) {
 	if logger.Level <= ErrorLevel {
-		logger.errorLogger.Println(fmt.Sprint(message...))
+		logger.fatalLogger.Println(fmt.Sprint(message...))
 	}
 }
