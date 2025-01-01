@@ -9,6 +9,7 @@ GO_GENERATE := $(GO_CMD) generate
 GO_CLEAN := $(GO_CMD) clean
 GO_FILES := $(shell find . -name '*.go' -not -path './vendor/*')
 BUILD_DIR := bin
+LOG_DIR := /var/log/$(APP_NAME)
 MAIN_FILE := main.go
 GENERATE_DIR := internal/ebpf/generated
 CONVERT_SCRIPT := convert_to_public.sh
@@ -62,6 +63,12 @@ clean:
 	@echo -e "$(RED)🧹 Cleaning up...$(RESET)"
 	@$(GO_CLEAN)
 	@rm -rf $(BUILD_DIR)
+	@echo -e "$(GREEN)✅ Clean complete!$(RESET)"
+
+# Clean logs
+clean_logs:
+	@echo -e "$(RED)🧹 Cleaning up logs...$(RESET)"
+	@sudo rm -rf $(LOG_DIR)/*
 	@echo -e "$(GREEN)✅ Clean complete!$(RESET)"
 
 # Run the application
