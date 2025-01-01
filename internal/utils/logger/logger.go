@@ -40,7 +40,7 @@ const (
 	InfoLevel
 	SuccessLevel
 	WarningLevel
-	ErrorLevel
+	FatalLevel
 )
 
 type Logger struct {
@@ -54,7 +54,7 @@ type Logger struct {
 }
 
 var logDir string = "styx"
-var logFilename string = time.Now().Local().Format("20-01-2000_01-01-01") + ".log"
+var logFilename string = time.Now().Local().Format("2006-01-02_15-04-05") + ".log"
 var logger *Logger
 var logFile *os.File
 
@@ -83,7 +83,7 @@ func init() {
 		infoLogger:  log.New(multiWriter, DefaultColors.Cyan+"[*] INFO: "+DefaultColors.White, log.LstdFlags),
 		succeLogger: log.New(multiWriter, DefaultColors.Green+"[+] SUCCESS: "+DefaultColors.White, log.LstdFlags),
 		warnLogger:  log.New(multiWriter, DefaultColors.Yellow+"[/] WARN: "+DefaultColors.White, log.LstdFlags),
-		fatalLogger: log.New(multiWriter, DefaultColors.Red+"[//] ERROR: "+DefaultColors.White, log.LstdFlags),
+		fatalLogger: log.New(multiWriter, DefaultColors.Red+"[//] FATAL: "+DefaultColors.White, log.LstdFlags),
 	}
 }
 
@@ -104,9 +104,21 @@ func Debug(message ...any) {
 	}
 }
 
+func Debugf(string string, values ...any) {
+	if logger.Level <= DebugLevel {
+		logger.debugLogger.Println(fmt.Sprintf(string, values...))
+	}
+}
+
 func Info(message ...any) {
 	if logger.Level <= InfoLevel {
 		logger.infoLogger.Println(fmt.Sprint(message...))
+	}
+}
+
+func Infof(string string, values ...any) {
+	if logger.Level <= InfoLevel {
+		logger.infoLogger.Println(fmt.Sprintf(string, values...))
 	}
 }
 
@@ -116,14 +128,32 @@ func Success(message ...any) {
 	}
 }
 
+func Successf(string string, values ...any) {
+	if logger.Level <= SuccessLevel {
+		logger.succeLogger.Println(fmt.Sprintf(string, values...))
+	}
+}
+
 func Warning(message ...any) {
 	if logger.Level <= WarningLevel {
 		logger.warnLogger.Println(fmt.Sprint(message...))
 	}
 }
 
+func Warningf(string string, values ...any) {
+	if logger.Level <= WarningLevel {
+		logger.warnLogger.Println(fmt.Sprintf(string, values...))
+	}
+}
+
 func Fatal(message ...any) {
-	if logger.Level <= ErrorLevel {
+	if logger.Level <= FatalLevel {
 		logger.fatalLogger.Println(fmt.Sprint(message...))
+	}
+}
+
+func Fatalf(string string, values ...any) {
+	if logger.Level <= FatalLevel {
+		logger.fatalLogger.Println(fmt.Sprintf(string, values...))
 	}
 }
