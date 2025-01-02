@@ -32,7 +32,7 @@ struct {
   __uint(type, BPF_MAP_TYPE_ARRAY);
   __uint(max_entries, 1);
   __type(key, __u32);
-  __type(value, _Bool);
+  __type(value, __u8);
 } control_map SEC(".maps");
 
 SEC("xdp")
@@ -75,12 +75,18 @@ int share_data(struct xdp_md *ctx) {
   __u32 key = 0;
   _Bool *control_value = bpf_map_lookup_elem(&control_map, &key);
   if (control_value) {
-    if (*control_value) {
+    if (*control_value == 1) {
       bpf_printk("Passing package\n");
       return XDP_PASS;
-    } else {
+    } else if (*control_value == 0) {
       bpf_printk("Dropping package\n");
       return XDP_DROP;
+    } else if (*control_value == 255) {
+      bpf_printk("Waiting processed package\n");
+      // do nothing
+    } else {
+      bpf_printk("Unknown control value: %d\n", *control_value);
+      return XDP_ABORTED;
     }
   } else {
     bpf_printk("Failed to retrieve control value from map\n");
