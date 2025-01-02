@@ -15,7 +15,6 @@
 #include <linux/ip.h>
 #include <linux/tcp.h>
 #include <linux/udp.h>
-#include <stdlib.h>
 
 #define MAX_PAYLOAD_SIZE 2048
 
@@ -27,7 +26,7 @@ struct packet_s {
 struct {
   __uint(type, BPF_MAP_TYPE_RINGBUF);
   __uint(max_entries, 4096);
-} module_map SEC(".maps");
+} packet_map SEC(".maps");
 
 struct {
   __uint(type, BPF_MAP_TYPE_ARRAY);
@@ -39,31 +38,30 @@ struct {
 SEC("xdp")
 int share_data(struct xdp_md *ctx) {
 
-  void *data = (void *)(long)ctx->data;
-  void *data_end = (void *)(long)ctx->data_end;
+  void *packet_offset = (void *)(long)ctx->data;
+  void *packet_offset_end = (void *)(long)ctx->data_end;
 
-  if (data + sizeof(struct ethhdr) > data_end) {
+  if (packet_offset + sizeof(struct ethhdr) > packet_offset_end) {
     return XDP_PASS;
   }
 
-  // Calcola la dimensione del payload
-  long payload_size = data_end - data;
-  if (payload_size > MAX_PAYLOAD_SIZE) {
-    bpf_printk("Payload size too big: %ld\n", payload_size);
-    payload_size = MAX_PAYLOAD_SIZE;
+  long packet_size = packet_offset_end - packet_offset;
+  if (packet_size > MAX_PAYLOAD_SIZE) {
+    bpf_printk("Payload size too big: %ld\n", packet_size);
+    packet_size = MAX_PAYLOAD_SIZE;
   }
 
   struct packet_s *packet =
-      bpf_ringbuf_reserve(&module_map, sizeof(struct packet_s), 0);
+      bpf_ringbuf_reserve(&packet_map, sizeof(struct packet_s), 0);
   if (!packet) {
     return XDP_PASS;
   }
 
-  packet->payload_size = payload_size;
+  packet->payload_size = packet_size;
 
-  unsigned char *src = data;
-  for (long i = 0; i < payload_size; i++) {
-    if (src + i >= data_end) {
+  unsigned char *src = packet_offset;
+  for (long i = 0; i < packet_size; i++) {
+    if (src + i >= packet_offset_end) {
       bpf_ringbuf_discard(packet, 0);
       return XDP_ABORTED;
     }
