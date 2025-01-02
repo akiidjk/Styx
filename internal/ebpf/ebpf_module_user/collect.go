@@ -47,9 +47,7 @@ func processPacket(packetPayload []byte) bool {
 		case layers.LayerTypeIPv4:
 			logger.Debug("IPv4 Layer:")
 			logger.Debugf("    Src IP: %s, Dst IP: %s", ip4.SrcIP, ip4.DstIP)
-			logger.Debug(fmt.Sprint(ip4.SrcIP))
-			logger.Debug(fmt.Sprint(ip4.SrcIP) == "192.168.1.20")
-			if fmt.Sprint(ip4.SrcIP) == "192.168.1.20" {
+			if fmt.Sprint(ip4.SrcIP) == "192.168.1.118" {
 				return false
 			}
 		case layers.LayerTypeIPv6:
@@ -82,7 +80,7 @@ func Collect(ifname string) {
 	stop := make(chan os.Signal, 5)
 	signal.Notify(stop, os.Interrupt)
 
-	rd, err := ringbuf.NewReader(objs.ModuleMap)
+	rd, err := ringbuf.NewReader(objs.PacketMap)
 	if err != nil {
 		logger.Fatal("Failed to open ringbuf reader: ", err)
 		os.Exit(1)
