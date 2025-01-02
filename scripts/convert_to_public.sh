@@ -23,26 +23,26 @@ error() {
 }
 
 if [ ! -d "$GENERATED_DIR" ] || [ -z "$(find "$GENERATED_DIR" -name "$TARGET_EXTENSION")" ]; then
-    error "Nessun file generato trovato in '$GENERATED_DIR'."
+    error "Not generated file funded '$GENERATED_DIR'."
     exit 1
 fi
 
 process_file() {
     local file="$1"
-    log "Modifica in corso: $file"
+    log "Editing in progress: $file"
 
     local functions=($(grep -oP '\bfunc \K[a-z][a-zA-Z0-9_]*' "$file"))
     local interfaces=($(grep -oP '\btype \K[a-z][a-zA-Z0-9_]*' "$file"))
 
     for func in "${functions[@]}"; do
         local new_func="$(tr '[:lower:]' '[:upper:]' <<< ${func:0:1})${func:1}"
-        log "Rendendo pubblica la funzione: $func -> $new_func"
+        log "Making the function public: $func -> $new_func"
         sed -i "s/\b$func\b/$new_func/g" "$file"
     done
 
     for interface in "${interfaces[@]}"; do
         local new_interface="$(tr '[:lower:]' '[:upper:]' <<< ${interface:0:1})${interface:1}"
-        log "Rendendo pubblica l'interfaccia: $interface -> $new_interface"
+        log "Making the interface public $interface -> $new_interface"
         sed -i "s/\b$interface\b/$new_interface/g" "$file"
     done
 }
@@ -51,4 +51,4 @@ for file in $(find "$GENERATED_DIR" -name "$TARGET_EXTENSION"); do
     process_file "$file"
 done
 
-success "Tutte le funzioni generate sono state rese pubbliche con successo."
+success "All generated functions were successfully released."
