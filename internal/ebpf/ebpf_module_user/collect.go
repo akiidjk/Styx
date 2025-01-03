@@ -21,7 +21,7 @@ type Packet struct {
 	Size    int64
 }
 
-func processPacket(packetPayload []byte, ip_block string) (uint8, string) {
+func processPacket(packetPayload []byte, ipToBlock string) (uint8, string) {
 	var eth layers.Ethernet
 	var ip4 layers.IPv4
 	var ip6 layers.IPv6
@@ -48,7 +48,7 @@ func processPacket(packetPayload []byte, ip_block string) (uint8, string) {
 		case layers.LayerTypeIPv4:
 			logger.Debug("IPv4 Layer:")
 			logger.Debugf("    Src IP: %s, Dst IP: %s", ip4.SrcIP, ip4.DstIP)
-			if ip4.SrcIP.String() == ip_block {
+			if ip4.SrcIP.String() == ipToBlock {
 				return 0, ip4.SrcIP.String()
 			}
 		case layers.LayerTypeIPv6:
@@ -63,17 +63,17 @@ func processPacket(packetPayload []byte, ip_block string) (uint8, string) {
 		case layers.LayerTypeICMPv4:
 			logger.Debug("ICMPv4 Layer:")
 			logger.Debugf("    TypeCode: %d, Checksum: %d", icmp4.TypeCode, icmp4.Checksum)
-			if ip4.SrcIP.String() == ip_block {
+			if ip4.SrcIP.String() == ipToBlock {
 				return 0, ip4.SrcIP.String()
 			}
 		}
 	}
 
 	// Nessun pacchetto corrispondente trovato
-	return 1, "255.255.255.255"
+	return 1, "2.2.2.2"
 }
 
-func Collect(ifname string, ip_block string) {
+func Collect(ifname string, ipToBlock string) {
 	var objs ebpfModules.CollecterObjects
 	if err := ebpfModules.LoadCollecterObjects(&objs, nil); err != nil {
 		logger.Fatal("Loading eBPF objects:", err)
@@ -87,7 +87,7 @@ func Collect(ifname string, ip_block string) {
 
 	controlMap := objs.ControlMap
 	keyControlMap := uint32(0)
-	var valueControlMap uint8 = 255
+	var valueControlMap uint8 = 2
 	var ip string
 
 	stop := make(chan os.Signal, 5)
@@ -137,13 +137,14 @@ func Collect(ifname string, ip_block string) {
 			Payload: payload,
 		}
 
-		valueControlMap, ip = processPacket(packet.Payload, ip_block)
+		valueControlMap, ip = processPacket(packet.Payload, ipToBlock)
 		logger.Debug("Value: ", valueControlMap, " Ip: ", ip)
 		if err := controlMap.Update(keyControlMap, valueControlMap, ebpf.UpdateAny); err != nil {
 			logger.Fatal("Failed to update control map: ", err)
+			continue
 		}
 
-		valueControlMap = 255 // waiting status
+		valueControlMap = 2 // waiting status
 		logger.Debug("Setting waiting: ", valueControlMap)
 
 		// logger.Debug(packetDecoded.Dump())

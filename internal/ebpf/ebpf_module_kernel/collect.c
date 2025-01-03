@@ -73,7 +73,7 @@ int share_data(struct xdp_md *ctx) {
   bpf_printk("Packet processed\n");
 
   __u32 key = 0;
-  _Bool *control_value = bpf_map_lookup_elem(&control_map, &key);
+  __u8 *control_value = bpf_map_lookup_elem(&control_map, &key);
   if (control_value) {
     if (*control_value == 1) {
       bpf_printk("Passing package\n");
@@ -81,7 +81,7 @@ int share_data(struct xdp_md *ctx) {
     } else if (*control_value == 0) {
       bpf_printk("Dropping package\n");
       return XDP_DROP;
-    } else if (*control_value == 255) {
+    } else if (*control_value == 2) {
       bpf_printk("Waiting processed package\n");
       // do nothing
     } else {
@@ -90,7 +90,7 @@ int share_data(struct xdp_md *ctx) {
     }
   } else {
     bpf_printk("Failed to retrieve control value from map\n");
-    return XDP_PASS;
+    return XDP_DROP;
   }
 }
 
