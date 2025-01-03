@@ -1,0 +1,19 @@
+
+services:
+  node1:
+    build:
+      context: ./attacker
+    container_name: node1
+    command: sh -c "while true; do sleep 3600; done"
+
+  firewall:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: firewall
+    user: root
+    privileged: true
+    ports:
+      - "8080:8080"
+    cap_add:
+      - NET_ADMIN
