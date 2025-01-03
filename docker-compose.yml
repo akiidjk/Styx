@@ -1,11 +1,10 @@
 
 services:
   node1:
-    build:
-      context: ./attacker
+    image: alpine:latest
     container_name: node1
     command: sh -c "while true; do sleep 3600; done"
-
+    pull_policy: always
   firewall:
     build:
       context: .
