@@ -12,7 +12,7 @@ import (
 )
 
 var ifname string
-var ip string
+var ipToBlock string
 
 var rootCmd = &cobra.Command{
 	Use:   "styx",
@@ -24,7 +24,7 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		ebpfmoduleuser.Collect(ifname, ip)
+		ebpfmoduleuser.Collect(ifname, ipToBlock)
 		// ebpfmoduleuser.Count()
 	},
 }
@@ -40,6 +40,5 @@ func init() {
 	// Flags defining
 	rootCmd.PersistentFlags().StringVarP(&ifname, "ifname", "i", "", "Interface to be observed")
 	rootCmd.MarkFlagsOneRequired("ifname")
-	rootCmd.PersistentFlags().StringVarP(&ip, "ip", "p", "", "Ip to block")
-	rootCmd.MarkFlagsOneRequired("ip")
+	rootCmd.PersistentFlags().StringVarP(&ipToBlock, "rule", "r", "", "Ip to block")
 }
