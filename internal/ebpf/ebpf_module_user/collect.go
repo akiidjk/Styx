@@ -3,8 +3,6 @@ package ebpfmoduleuser
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
-	"net"
 	"os"
 	"os/signal"
 
@@ -23,21 +21,23 @@ type Packet struct {
 	Size    int64
 }
 
-func processPacket(packetPayload []byte) (uint8, net.IP) {
+func processPacket(packetPayload []byte, ip_block string) (uint8, string) {
 	var eth layers.Ethernet
 	var ip4 layers.IPv4
 	var ip6 layers.IPv6
 	var tcp layers.TCP
+	var udp layers.UDP
+	var icmp4 layers.ICMPv4
 
 	parser := gopacket.NewDecodingLayerParser(
 		layers.LayerTypeEthernet,
-		&eth, &ip4, &ip6, &tcp,
+		&eth, &ip4, &ip6, &tcp, &udp, &icmp4,
 	)
 	decoded := []gopacket.LayerType{}
 
 	if err := parser.DecodeLayers(packetPayload, &decoded); err != nil {
 		logger.Warningf("Could not decode layers: %v", err)
-		return 1, ip4.SrcIP
+		return 1, ""
 	}
 
 	for _, layerType := range decoded {
@@ -48,8 +48,8 @@ func processPacket(packetPayload []byte) (uint8, net.IP) {
 		case layers.LayerTypeIPv4:
 			logger.Debug("IPv4 Layer:")
 			logger.Debugf("    Src IP: %s, Dst IP: %s", ip4.SrcIP, ip4.DstIP)
-			if fmt.Sprint(ip4.SrcIP) == "192.168.1.118" {
-				return 0, ip4.SrcIP
+			if ip4.SrcIP.String() == ip_block {
+				return 0, ip4.SrcIP.String()
 			}
 		case layers.LayerTypeIPv6:
 			logger.Debug("IPv6 Layer:")
@@ -57,12 +57,23 @@ func processPacket(packetPayload []byte) (uint8, net.IP) {
 		case layers.LayerTypeTCP:
 			logger.Debug("TCP Layer:")
 			logger.Debugf("    Src Port: %d, Dst Port: %d", tcp.SrcPort, tcp.DstPort)
+		case layers.LayerTypeUDP:
+			logger.Debug("UDP Layer:")
+			logger.Debugf("    Src Port: %d, Dst Port: %d", udp.SrcPort, udp.DstPort)
+		case layers.LayerTypeICMPv4:
+			logger.Debug("ICMPv4 Layer:")
+			logger.Debugf("    TypeCode: %d, Checksum: %d", icmp4.TypeCode, icmp4.Checksum)
+			if ip4.SrcIP.String() == ip_block {
+				return 0, ip4.SrcIP.String()
+			}
 		}
 	}
-	return 1, ip4.SrcIP
+
+	// Nessun pacchetto corrispondente trovato
+	return 1, "255.255.255.255"
 }
 
-func Collect(ifname string) {
+func Collect(ifname string, ip_block string) {
 	var objs ebpfModules.CollecterObjects
 	if err := ebpfModules.LoadCollecterObjects(&objs, nil); err != nil {
 		logger.Fatal("Loading eBPF objects:", err)
@@ -77,7 +88,7 @@ func Collect(ifname string) {
 	controlMap := objs.ControlMap
 	keyControlMap := uint32(0)
 	var valueControlMap uint8 = 255
-	var ip net.IP
+	var ip string
 
 	stop := make(chan os.Signal, 5)
 	signal.Notify(stop, os.Interrupt)
@@ -126,7 +137,7 @@ func Collect(ifname string) {
 			Payload: payload,
 		}
 
-		valueControlMap, ip = processPacket(packet.Payload)
+		valueControlMap, ip = processPacket(packet.Payload, ip_block)
 		logger.Debug("Value: ", valueControlMap, " Ip: ", ip)
 		if err := controlMap.Update(keyControlMap, valueControlMap, ebpf.UpdateAny); err != nil {
 			logger.Fatal("Failed to update control map: ", err)
