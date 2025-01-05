@@ -1,4 +1,4 @@
-package ebpfmoduleuser
+package ebpf
 
 import (
 	"bytes"
@@ -6,9 +6,8 @@ import (
 	"os"
 	"os/signal"
 
-	ebpfModules "github.com/akiidjk/styx/internal/ebpf/generated"
+	ebpfGenerated "github.com/akiidjk/styx/internal/ebpf/generated"
 	"github.com/akiidjk/styx/internal/utils"
-	"github.com/akiidjk/styx/internal/utils/logger"
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/ringbuf"
 	"github.com/google/gopacket"
@@ -36,33 +35,33 @@ func processPacket(packetPayload []byte, ipToBlock string) (uint8, string) {
 	decoded := []gopacket.LayerType{}
 
 	if err := parser.DecodeLayers(packetPayload, &decoded); err != nil {
-		logger.Warningf("Could not decode layers: %v", err)
+		logger.Warn().Err(err).Msg("Could not decode layers")
 		return 1, ""
 	}
 
 	for _, layerType := range decoded {
 		switch layerType {
 		case layers.LayerTypeEthernet:
-			logger.Debug("Ethernet Layer:")
-			logger.Debugf("    Src MAC: %s, Dst MAC: %s", eth.SrcMAC, eth.DstMAC)
+			logger.Debug().Msg("Ethernet Layer:")
+			logger.Debug().Str("Src MAC", eth.SrcMAC.String()).Str("Dest MAC", eth.DstMAC.String())
 		case layers.LayerTypeIPv4:
-			logger.Debug("IPv4 Layer:")
-			logger.Debugf("    Src IP: %s, Dst IP: %s", ip4.SrcIP, ip4.DstIP)
+			logger.Debug().Msg("IPv4 Layer:")
+			logger.Debug().Str("Src IPv4", ip4.SrcIP.String()).Str("Dest IPv4", ip4.DstIP.String())
 			if ip4.SrcIP.String() == ipToBlock {
 				return 0, ip4.SrcIP.String()
 			}
 		case layers.LayerTypeIPv6:
-			logger.Debug("IPv6 Layer:")
-			logger.Debugf("    Src IP: %s, Dst IP: %s", ip6.SrcIP, ip6.DstIP)
+			logger.Debug().Msg("IPv6 Layer:")
+			logger.Debug().Str("Src IPv6", ip6.SrcIP.String()).Str("Dest IPv6", ip6.DstIP.String())
 		case layers.LayerTypeTCP:
-			logger.Debug("TCP Layer:")
-			logger.Debugf("    Src Port: %d, Dst Port: %d", tcp.SrcPort, tcp.DstPort)
+			logger.Debug().Msg("TCP Layer:")
+			logger.Debug().Str("TCP Src port", tcp.SrcPort.String()).Str("TCP Dest port", tcp.DstPort.String())
 		case layers.LayerTypeUDP:
-			logger.Debug("UDP Layer:")
-			logger.Debugf("    Src Port: %d, Dst Port: %d", udp.SrcPort, udp.DstPort)
+			logger.Debug().Msg("UDP Layer:")
+			logger.Debug().Str("UDP Src port", udp.SrcPort.String()).Str("UDP Dest port", udp.DstPort.String())
 		case layers.LayerTypeICMPv4:
-			logger.Debug("ICMPv4 Layer:")
-			logger.Debugf("    TypeCode: %d, Checksum: %d", icmp4.TypeCode, icmp4.Checksum)
+			logger.Debug().Msg("ICMPv4 Layer:")
+			logger.Debug().Str("TypeCode", icmp4.TypeCode.String()).Uint16("Checksum", icmp4.Checksum)
 			if ip4.SrcIP.String() == ipToBlock {
 				return 0, ip4.SrcIP.String()
 			}
@@ -74,16 +73,16 @@ func processPacket(packetPayload []byte, ipToBlock string) (uint8, string) {
 }
 
 func Collect(ifname string, ipToBlock string) {
-	var objs ebpfModules.CollecterObjects
-	if err := ebpfModules.LoadCollecterObjects(&objs, nil); err != nil {
-		logger.Fatal("Loading eBPF objects:", err)
+	var objs ebpfGenerated.CollecterObjects
+	if err := ebpfGenerated.LoadCollecterObjects(&objs, nil); err != nil {
+		logger.Fatal().Err(err).Msg("Loading eBPF objects")
 	}
 	defer objs.Close()
 
 	link := utils.LinkInterface(ifname, objs.ShareData)
 	defer link.Close()
 
-	logger.Info("Sharing incoming packets on ", ifname)
+	logger.Info().Str("Interface name", ifname).Msg("Sharing incoming packets on interface")
 
 	controlMap := objs.ControlMap
 	keyControlMap := uint32(0)
@@ -95,7 +94,7 @@ func Collect(ifname string, ipToBlock string) {
 
 	rd, err := ringbuf.NewReader(objs.PacketMap)
 	if err != nil {
-		logger.Fatal("Failed to open ringbuf reader: ", err)
+		logger.Fatal().Err(err).Msg("Failed to open ringbuf reader")
 		os.Exit(1)
 	}
 	defer rd.Close()
@@ -104,7 +103,7 @@ func Collect(ifname string, ipToBlock string) {
 		for {
 			select {
 			case <-stop:
-				logger.Info("Received signal, exiting..")
+				logger.Info().Msg("Received signal, exiting..")
 				os.Exit(0)
 			}
 		}
@@ -114,7 +113,7 @@ func Collect(ifname string, ipToBlock string) {
 		record, err := rd.Read()
 
 		if err != nil {
-			logger.Warning("Error reading from ringbuf: ", err)
+			logger.Warn().Err(err).Msg("Error reading from ringbuf")
 			continue
 		}
 
@@ -122,13 +121,13 @@ func Collect(ifname string, ipToBlock string) {
 
 		var size int64
 		if err := binary.Read(reader, binary.LittleEndian, &size); err != nil {
-			logger.Warning("Error reading size: ", err)
+			logger.Warn().Err(err).Msg("Error reading size")
 			continue
 		}
 
 		payload := make([]byte, size)
 		if _, err := reader.Read(payload); err != nil {
-			logger.Warning("Error reading payload: ", err)
+			logger.Warn().Err(err).Msg("Error reading payload")
 			continue
 		}
 
@@ -138,15 +137,14 @@ func Collect(ifname string, ipToBlock string) {
 		}
 
 		valueControlMap, ip = processPacket(packet.Payload, ipToBlock)
-		logger.Debug("Value: ", valueControlMap, " Ip: ", ip)
+		logger.Debug().Uint8("Value: ", valueControlMap).Str(" Ip: ", ip)
 		if err := controlMap.Update(keyControlMap, valueControlMap, ebpf.UpdateAny); err != nil {
-			logger.Fatal("Failed to update control map: ", err)
+			logger.Fatal().Err(err).Msg("Failed to update control map")
 			continue
 		}
 
 		valueControlMap = 2 // waiting status
-		logger.Debug("Setting waiting: ", valueControlMap)
 
-		// logger.Debug(packetDecoded.Dump())
+		// logger.Debug().Msg(packetDecoded.Dump())
 	}
 }
