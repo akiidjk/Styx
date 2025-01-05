@@ -61,7 +61,7 @@ int share_data(struct xdp_md *ctx) {
 
   unsigned char *src = packet_offset;
   for (long i = 0; i < packet_size; i++) {
-    if (src + i >= packet_offset_end) {
+    if (src + i >= (unsigned char *)packet_offset_end) {
       bpf_ringbuf_discard(packet, 0);
       return XDP_ABORTED;
     }
@@ -92,6 +92,7 @@ int share_data(struct xdp_md *ctx) {
     bpf_printk("Failed to retrieve control value from map\n");
     return XDP_DROP;
   }
+  return XDP_DROP;
 }
 
 char __license[] SEC("license") = "Dual MIT/GPL";
