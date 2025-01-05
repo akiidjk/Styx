@@ -14,7 +14,8 @@ import (
 
 func init() {
 	logger.SetLevel(0)
-	fmt.Print(logger.DefaultColors.Magenta + `
+	l := logger.GetLogger()
+	fmt.Print("\033[35m" + `
 ███████╗████████╗██╗   ██╗██╗  ██╗    ███████╗██╗██████╗ ███████╗██╗    ██╗ █████╗ ██╗     ██╗
 ██╔════╝╚══██╔══╝╚██╗ ██╔╝╚██╗██╔╝    ██╔════╝██║██╔══██╗██╔════╝██║    ██║██╔══██╗██║     ██║
 ███████╗   ██║    ╚████╔╝  ╚███╔╝     █████╗  ██║██████╔╝█████╗  ██║ █╗ ██║███████║██║     ██║
@@ -24,17 +25,19 @@ func init() {
 
 	created by @akiidjk
 
-` + logger.DefaultColors.Reset)
+` + "\033[0m")
 
 	eiud := os.Geteuid()
 	if eiud != 0 {
-		logger.Fatal("Remember to run the program with `sudo` or with root")
+		l.Fatal().Msg("Remember to run the program with `sudo` or with root")
 		os.Exit(1)
+
+		l.Debug().Msg("Remember to run the program with `sudo` or with root")
 	}
 
 	// Remove resource limits for kernels <5.11.
 	if err := rlimit.RemoveMemlock(); err != nil {
-		logger.Fatal("Removing memlock:", err)
+		l.Fatal().Err(err).Msg("Removing memlock")
 		os.Exit(1)
 	}
 }
