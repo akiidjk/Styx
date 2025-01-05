@@ -16,3 +16,7 @@ internal/ebpf/generated/*
 # Web dump
 internal/web/tmp
 internal/web/*.db
+
+
+# Log viewer
+signoz

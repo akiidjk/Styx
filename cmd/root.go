@@ -6,9 +6,8 @@ package cmd
 import (
 	"os"
 
+	ebpfModule "github.com/akiidjk/styx/internal/ebpf"
 	"github.com/spf13/cobra"
-
-	ebpfmoduleuser "github.com/akiidjk/styx/internal/ebpf/ebpf_module_user"
 )
 
 var ifname string
@@ -24,7 +23,7 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		ebpfmoduleuser.Collect(ifname, ipToBlock)
+		ebpfModule.Collect(ifname, ipToBlock)
 		// ebpfmoduleuser.Count()
 	},
 }
