@@ -27,6 +27,12 @@ RED := \033[31m
 all: run
 
 # Build the application
+build-prod: generate
+	@echo -e "$(BLUE)🔨 Building $(APP_NAME)...$(RESET)"
+	@mkdir -p $(BUILD_DIR)
+	@$(GO_BUILD) -o $(BUILD_DIR)/$(APP_NAME) -race -cover -v -ldflags "-s -w"  $(MAIN_FILE)
+	@echo -e "$(GREEN)✅ Build complete!$(RESET)"
+
 build: generate
 	@echo -e "$(BLUE)🔨 Building $(APP_NAME)...$(RESET)"
 	@mkdir -p $(BUILD_DIR)
