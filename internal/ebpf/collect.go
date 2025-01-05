@@ -42,26 +42,20 @@ func processPacket(packetPayload []byte, ipToBlock string) (uint8, string) {
 	for _, layerType := range decoded {
 		switch layerType {
 		case layers.LayerTypeEthernet:
-			logger.Debug().Msg("Ethernet Layer:")
-			logger.Debug().Str("Src MAC", eth.SrcMAC.String()).Str("Dest MAC", eth.DstMAC.String())
+			logger.Debug().Str("Src", eth.SrcMAC.String()).Str("Dest", eth.DstMAC.String()).Msg("MAC")
 		case layers.LayerTypeIPv4:
-			logger.Debug().Msg("IPv4 Layer:")
-			logger.Debug().Str("Src IPv4", ip4.SrcIP.String()).Str("Dest IPv4", ip4.DstIP.String())
+			logger.Debug().Str("Src", ip4.SrcIP.String()).Str("Dest", ip4.DstIP.String()).Msg("IPv4")
 			if ip4.SrcIP.String() == ipToBlock {
 				return 0, ip4.SrcIP.String()
 			}
 		case layers.LayerTypeIPv6:
-			logger.Debug().Msg("IPv6 Layer:")
-			logger.Debug().Str("Src IPv6", ip6.SrcIP.String()).Str("Dest IPv6", ip6.DstIP.String())
+			logger.Debug().Str("Src", ip6.SrcIP.String()).Str("Dest", ip6.DstIP.String()).Msg("IPv6")
 		case layers.LayerTypeTCP:
-			logger.Debug().Msg("TCP Layer:")
-			logger.Debug().Str("TCP Src port", tcp.SrcPort.String()).Str("TCP Dest port", tcp.DstPort.String())
+			logger.Debug().Str("Src port", tcp.SrcPort.String()).Str("Dest port", tcp.DstPort.String()).Msg("TCP")
 		case layers.LayerTypeUDP:
-			logger.Debug().Msg("UDP Layer:")
-			logger.Debug().Str("UDP Src port", udp.SrcPort.String()).Str("UDP Dest port", udp.DstPort.String())
+			logger.Debug().Str("Src port", udp.SrcPort.String()).Str("Dest port", udp.DstPort.String()).Msg("UDP")
 		case layers.LayerTypeICMPv4:
-			logger.Debug().Msg("ICMPv4 Layer:")
-			logger.Debug().Str("TypeCode", icmp4.TypeCode.String()).Uint16("Checksum", icmp4.Checksum)
+			logger.Debug().Str("TypeCode", icmp4.TypeCode.String()).Uint16("Checksum", icmp4.Checksum).Msg("ICMPv4")
 			if ip4.SrcIP.String() == ipToBlock {
 				return 0, ip4.SrcIP.String()
 			}
@@ -69,7 +63,7 @@ func processPacket(packetPayload []byte, ipToBlock string) (uint8, string) {
 	}
 
 	// Nessun pacchetto corrispondente trovato
-	return 1, "2.2.2.2"
+	return 1, "255.255.255.255"
 }
 
 func Collect(ifname string, ipToBlock string) {
@@ -132,7 +126,7 @@ func Collect(ifname string, ipToBlock string) {
 		}
 
 		packet := Packet{
-			Size:    size,
+			// Size:    size,
 			Payload: payload,
 		}
 
@@ -145,6 +139,5 @@ func Collect(ifname string, ipToBlock string) {
 
 		valueControlMap = 2 // waiting status
 
-		// logger.Debug().Msg(packetDecoded.Dump())
 	}
 }
