@@ -17,6 +17,8 @@ internal/ebpf/generated/*
 internal/web/tmp
 internal/web/*.db
 
-
 # Log viewer
-signoz
+log-manager/.ruff_cache
+log-manager/.venv
+log-manager/__pycache__
+log-manager/uv.lock
