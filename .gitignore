@@ -18,7 +18,7 @@ internal/web/tmp
 internal/web/*.db
 
 # Log viewer
-log-manager/.ruff_cache
-log-manager/.venv
-log-manager/__pycache__
-log-manager/uv.lock
+log-viewer/.ruff_cache
+log-viewer/.venv
+log-viewer/__pycache__
+log-viewer/uv.lock
