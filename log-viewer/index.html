@@ -14,35 +14,19 @@
     <script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js"></script>
 </head>
 <body class="p-6">
+    <!-- Notifiche -->
     <div class="absolute right-4">
-        <div id="alert-success" role="alert" class="alert alert-success hidden flex items-center gap-3 p-4 border text-white font-bold rounded-md shadow-md">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            class="h-6 w-6 shrink-0 stroke-current text-green-500">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        <div id="alert-success" role="alert" class="alert alert-success hidden items-center gap-3 p-4 border text-white font-bold rounded-md shadow-md">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="h-6 w-6 shrink-0 stroke-current text-green-500">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
           <span class="text-sm font-medium">Loaded tables successfully.</span>
         </div>
     </div>
-
     <div class="absolute right-4">
-        <div id="alert-error" role="alert" class="alert alert-error hidden flex items-center gap-3 p-4 border  text-white font-bold rounded-md shadow-md">
-           <svg
-             xmlns="http://www.w3.org/2000/svg"
-             fill="none"
-             viewBox="0 0 24 24"
-             class="h-6 w-6 shrink-0 stroke-current text-red-500">
-             <path
-               stroke-linecap="round"
-               stroke-linejoin="round"
-               stroke-width="2"
-               d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        <div id="alert-error" role="alert" class="alert alert-error hidden items-center gap-3 p-4 border text-white font-bold rounded-md shadow-md">
+           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="h-6 w-6 shrink-0 stroke-current text-red-500">
+             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
            </svg>
            <span class="text-sm font-medium">An error occurred. Please try again.</span>
          </div>
@@ -50,10 +34,18 @@
 
     <div class="container mx-auto h-screen">
         <h1 class="text-3xl font-bold mb-4 text-gray-200">Structured Log Viewer</h1>
-        <input type="file" id="logFile" class="file-input file-input-bordered file-input-md w-full max-w-xs mt-5 mb-5"/>
+        <input type="file" id="logFile" class="file-input file-input-bordered file-input-md w-full max-w-xs mt-5 mb-5" />
         <button id="uploadButton" class="btn btn-primary mt-2 ml-4">Upload and View Logs</button>
+        <div class="dropdown dropdown-hover">
+          <button tabindex="0" class="btn btn-accent btn-outline m-1">Hover</button>
+          <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
+            {%- for file in file_list %}
+                <li><a data-file="{{ file }}" class="dropdown-item">{{ file }}</a></li>
+            {%- endfor %}
+          </ul>
+        </div>
         <div class="mb-4">
-            <input type="text" id="filter" class="w-full input input-bordered" placeholder="Enter filter query...">
+            <input type="text" id="filter" class="w-full input input-bordered" placeholder="Enter filter query..." />
         </div>
         <div>
             <table id="logTable" class="stripe hover w-full rounded-lg overflow-hidden">
