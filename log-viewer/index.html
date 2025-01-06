@@ -11,6 +11,8 @@
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.0.4/pako.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" integrity="sha512-dfX5uYVXzyU8+KHqj8bjo7UkOdg18PaOtpa48djpNbZHwExddghZ+ZmzWT06R5v6NSk3ZUfsH6FNEDepLx9hPQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js"></script>
 </head>
 <body class="p-6">
@@ -33,15 +35,27 @@
     </div>
 
     <div class="container mx-auto h-screen">
-        <h1 class="text-3xl font-bold mb-4 text-gray-200">Structured Log Viewer</h1>
+        <h1 id="title" class="text-3xl font-bold mb-4 text-gray-200">Structured Log Viewer</h1>
         <input type="file" id="logFile" class="file-input file-input-bordered file-input-md w-full max-w-xs mt-5 mb-5" />
         <button id="uploadButton" class="btn btn-primary mt-2 ml-4">Upload and View Logs</button>
         <div class="dropdown dropdown-hover">
-          <button tabindex="0" class="btn btn-accent btn-outline m-1">Hover</button>
+          <button tabindex="0" class="btn btn-accent btn-outline m-1">Load a file from the logs dir</button>
           <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
-            {%- for file in file_list %}
-                <li><a data-file="{{ file }}" class="dropdown-item">{{ file }}</a></li>
-            {%- endfor %}
+            {%- if file_list|length == 0 %}
+                <li><span class="text-gray-500">No files available</span></li>
+            {%- else %}
+                {%- for file in file_list %}
+                    <li><a data-file="{{ file }}" class="dropdown-item">{{ file }}</a></li>
+                {%- endfor %}
+            {%- endif %}
+          </ul>
+        </div>
+        <button id="resetFilter" class="btn btn-secondary ml-2">Reset Filter</button>
+        <button id="exportButton" class="btn btn-neutral ml-2"> Export in CSV </button>
+        <div class="dropdown">
+          <div tabindex="0" role="button" class="btn btn-active btn-ghost m-1">Edit columns</div>
+          <ul tabindex="0" id="columnToggle" class="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
+            <!-- Dynamically populated column toggles -->
           </ul>
         </div>
         <div class="mb-4">
@@ -60,6 +74,10 @@
             </table>
         </div>
     </div>
-    <script src="static/index.js"></script>
+    <script src="static/js/index.js" defer></script>
+    <script src="static/js/errors.js" defer></script>
+    <script src="static/js/cookies.js" defer></script>
+    <script src="static/js/filters.js" defer></script>
+    <script src="static/js/table.js" defer></script>
 </body>
 </html>
