@@ -8,6 +8,7 @@ from werkzeug.utils import secure_filename
 
 app = Flask(__name__, template_folder=".")
 app.config["UPLOAD_FOLDER"] = "./uploads"
+app.config["LOGS_FOLDER"] = os.environ.get("LOGS_FOLDER", "/var/log/styx")
 
 def load_logs(file_path):
     """Load structured logs from a file."""
@@ -35,6 +36,7 @@ def get_logs():
         if file and file.filename:
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+            df = load_logs(os.path.join(app.config["UPLOAD_FOLDER"], filename))
         else:
             return jsonify({"error": "No file provided"}), 400
 
@@ -44,15 +46,20 @@ def get_logs():
         fileName = request.args.get("fileName")
         if fileName:
             filename = secure_filename(fileName)
-            if filename not in os.listdir(app.config["UPLOAD_FOLDER"]):
+            if filename not in os.listdir(app.config["UPLOAD_FOLDER"]) and filename not in os.listdir(app.config["LOGS_FOLDER"]):
                 return jsonify({"error": "File not found"}), 404
+            else:
+                if filename in os.listdir(app.config["UPLOAD_FOLDER"]):
+                    df = load_logs(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+                else:
+                    df = load_logs(os.path.join(app.config["LOGS_FOLDER"], filename))
         else:
             return jsonify({"error": "No file provided"}), 400
 
     else:
         return jsonify({"error": "Invalid request method"}), 405
 
-    df = load_logs(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+
     if df is None:
         return jsonify({"error": "Could not load logs"}), 500
 
@@ -61,8 +68,9 @@ def get_logs():
 @app.route("/")
 def index():
     """Render the index page for the frontend."""
-    return render_template("index.html")
+    file_list = os.listdir(app.config["LOGS_FOLDER"])
+    return render_template("index.html", file_list=file_list)
 
 
-# if __name__ == "__main__":
-    # app.run(debug=False, host="127.0.0.1", port=5000)
+if __name__ == "__main__":
+    app.run(debug=True, host="127.0.0.1", port=5000)
