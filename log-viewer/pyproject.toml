@@ -1,5 +1,5 @@
 [project]
-name = "log-manager"
+name = "log-viewer"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
