@@ -9,13 +9,16 @@ from werkzeug.utils import secure_filename
 app = Flask(__name__, template_folder=".")
 app.config["UPLOAD_FOLDER"] = "./uploads"
 app.config["LOGS_FOLDER"] = os.environ.get("LOGS_FOLDER", "/var/log/styx")
+MAX_LINES = 10000
 
 def load_logs(file_path):
     """Load structured logs from a file."""
     try:
         with open(file_path, "r") as file:
             data = []
-            for line in file:
+            for index,line in enumerate(file):
+                if index >= MAX_LINES:
+                    break
                 log = json.loads(line)
                 log["time"] = datetime.fromtimestamp(log["time"]).strftime(
                     "%Y-%m-%d %H:%M:%S"
