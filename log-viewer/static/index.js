@@ -15,11 +15,10 @@ function showNotification(message, type = 'success') {
       setTimeout(() => {
         alertElement.classList.add('hidden');
         alertElement.classList.remove('fade-out');
-      }, 500); // Durata dell'animazione di uscita
-    }, 5000); // Tempo di visualizzazione
+      }, 500); // Durata animazione uscita
+    }, 5000); // Tempo di visibilità
   }
 }
-
 
 function loadPreferences() {
   const fileName = Cookies.get('logFileName');
@@ -74,6 +73,7 @@ function populateTable(data) {
       data: data,
       columns: columns,
       responsive: true,
+      destroy: true,
       paging: true,
       pageLength: pageLength,
       drawCallback: function (settings) {
@@ -82,7 +82,6 @@ function populateTable(data) {
         Cookies.set('pageLength', pageInfo.length, { expires: 7 });
       },
       lengthMenu: [[100, 200, 300, 500, 1000, -1], [100, 200, 300, 500, "1K", "All"]],
-      scrollX: true,
       scrollY: '50vh',
       search: {
         regex: true,
@@ -92,6 +91,53 @@ function populateTable(data) {
 
   showNotification('Logs loaded successfully!', 'success');
 }
+
+function initializeDropdown() {
+  const dropdownItems = document.querySelectorAll('.dropdown-item');
+
+  if (dropdownItems.length > 0) {
+    dropdownItems.forEach(item => {
+      item.addEventListener('click', event => {
+        event.preventDefault();
+        const fileName = event.target.getAttribute('data-file');
+        handleFileSelection(fileName);
+      });
+    });
+  }
+}
+
+async function handleFileSelection(fileName) {
+  if (!fileName) return;
+
+  try {
+    const response = await axios.get('/logs', { params: { fileName } });
+    console.log(response)
+    if (response.data) {
+      savePreferences(fileName);
+      location.reload();
+      showNotification(`Logs for ${fileName} loaded successfully.`, 'success');
+
+    }
+  } catch (error) {
+    console.error(`Error fetching logs for ${fileName}:`, error);
+    showNotification(`Error loading logs for ${fileName}.`, 'error');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const { fileName, filterValue } = loadPreferences();
+
+  if (fileName) {
+    const logs = await uploadFileAndFetchLogs(null, fileName);
+    populateTable(logs);
+  }
+
+  if (filterValue) {
+    document.getElementById('filter').value = filterValue;
+  }
+
+  initializeDropdown();
+});
 
 $('#filter').on('keyup', function () {
   const query = $(this).val().toLowerCase();
@@ -111,19 +157,6 @@ document.getElementById('uploadButton').addEventListener('click', async () => {
 
   const logs = await uploadFileAndFetchLogs(file);
   populateTable(logs);
-});
-
-document.addEventListener('DOMContentLoaded', async () => {
-  const { fileName, filterValue } = loadPreferences();
-
-  if (fileName) {
-    const logs = await uploadFileAndFetchLogs(null, fileName);
-    populateTable(logs);
-  }
-
-  if (filterValue) {
-    document.getElementById('filter').value = filterValue;
-  }
 });
 
 window.onerror = function (message, source, lineno, colno, error) {
