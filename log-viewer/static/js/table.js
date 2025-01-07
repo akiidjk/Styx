@@ -1,72 +1,73 @@
-function populateTable(data) {
-  if (data.length === 0) {
-    console.error('No data to display.');
-    showNotification('No data to display!', 'error');
-    return;
-  }
+var gridOptionsInstance;
+let gridApi;
+let columns;
+let excludedColumns = [];
 
-  if ($.fn.DataTable.isDataTable('#logTable')) {
-    $('#logTable').DataTable().destroy();
-  }
-
-  const columns = Object.keys(data[0]).map(key => ({ title: key, data: key }));
-
-  $(document).ready(function () {
-    const savedPreferences = loadPreferences();
-    const pageLength = savedPreferences.pageLength ? parseInt(savedPreferences.pageLength, 10) : 10;
-
-    $('#logTable').DataTable({
-      data: data,
-      columns: columns,
-      responsive: true,
-      destroy: true,
-      paging: true,
-      pageLength: pageLength,
-      drawCallback: savePageLength,
-      lengthMenu: [[100, 200, 300, 500, 1000, -1], [100, 200, 300, 500, "1K", "All"]],
-      scrollY: '50vh',
-      search: {
-        regex: true,
-      }
-    });
-
-    initColumnsDropdown();
+function populateTable(rows, columnNames) {
+  columnRecord = columnNames.map((column) => {
+    return {
+      headerName: column,
+      field: column,
+      sortable: true,
+      filter: true,
+      resizable: true,
+    };
   });
+
+  initColumnsDropdown(columnNames);
+
+  gridOptionsInstance = {
+    rowData: rows,
+    columnDefs: columnRecord,
+    rowSelection: {
+      mode: 'multiRow',
+      enableClickSelection: true,
+    },
+    pagination: true,
+    paginationPageSizeSelector: [100, 200, 500, 1000],
+  };
+  const myGridElement = document.querySelector('#logGrid');
+  gridApi = agGrid.createGrid(myGridElement, gridOptionsInstance);
+  columns = gridApi.getColumnDefs();
   showNotification('Logs loaded successfully!', 'success');
 }
 
-
-$('#exportButton').on('click', function () {
-  const table = $('#logTable').DataTable();
-  const data = table.rows({ search: 'applied' }).data().toArray();
-  const csv = Papa.unparse(data);
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'filtered_logs.csv';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+document.getElementById('exportButton').addEventListener('click', function () {
+  gridApi.exportDataAsCsv({
+    onlySelected: false,
+    onlySelectedAllPages: false,
+    suppressQuotes: false,
+    fileName: 'filtered_logs.csv',
+  });
 });
 
-
-function initColumnsDropdown() {
-  table = $('#logTable').DataTable();
-  const menu = $('#columnToggle');
-  table.columns().every(function (index) {
-    const columnTitle = table.column(index).header().innerText;
+function initColumnsDropdown(columnNames) {
+  const menu = $('#columnDropdown');
+  columnNames.map(function (column, index) {
+    const columnTitle = column;
     const item = `
         <label class="label cursor-pointer">
           <span class="label-text">${columnTitle}</span>
-          <input type="checkbox" data-column="${index}" checked="checked" class="checkbox" />
+          <input type="checkbox" data-column="${column}" checked="checked" class="checkbox" />
         </label>
       `;
     menu.append(item);
 
-    $('#columnToggle input[type="checkbox"]').on('change', function () {
-      const column = $('#logTable').DataTable().column($(this).data('column'));
-      column.visible($(this).is(':checked'));
+    //TODO: Edit the function for AG GRID
+    $('#columnToggle input[type="checkbox"]').off('change').on('change', function () {
+      const colId = $(this).data('column');
+      const isVisible = $(this).is(':checked');
+      const column = gridApi.getColumnDefs().filter((column) => colId == column.colId);
+      if (column) {
+        column.hide = !isVisible;
+        if (isVisible) {
+          excludedColumns = excludedColumns.filter(id => id !== colId);
+        } else {
+          excludedColumns.push(colId);
+        }
+        const filteredColumns = columns.filter(col => !excludedColumns.includes(col.colId));
+        gridApi.setGridOption("columnDefs", filteredColumns);
+      }
     });
   });
 }
