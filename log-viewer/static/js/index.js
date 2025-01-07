@@ -3,13 +3,13 @@ async function uploadFileAndFetchLogs(file, fileName = null) {
     let response;
     if (!file && fileName) {
       response = await axios.get('/logs', {
-        params: { fileName: fileName }
+        params: { fileName: fileName },
       });
     } else if (file) {
       const formData = new FormData();
       formData.append('file', file);
       response = await axios.post('/logs', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
     } else {
       throw new Error('No file provided or stored in cookies.');
@@ -19,13 +19,44 @@ async function uploadFileAndFetchLogs(file, fileName = null) {
       document.getElementById("title").textContent = `Structured Log Viewer | Logs for ${fileName}`;
     }
 
-    showNotification('Logs loaded successfully!', 'success');
-    return response.data;
+    const contentType = response.headers['content-type'];
+
+    if (contentType && contentType.includes('multipart/form-data')) {
+      const boundary = contentType.split('boundary=')[1];
+      const data = await parseMultipartResponse(response.data, boundary);
+      return {
+        rows: JSON.parse(data.file),
+        columns: JSON.parse(data.columns)
+      };
+    } else {
+      return JSON.parse(response.data);
+    }
+
   } catch (error) {
     console.error('Error response:', error.response);
     showNotification(`Error: ${error.response?.data?.message || error.message}`, 'error');
-    return [];
+    return null;
   }
+}
+
+async function parseMultipartResponse(data, boundary) {
+  const text = await data;
+  const parts = text.split(`--${boundary}`);
+
+  const result = {};
+  parts.forEach(part => {
+    if (!part.trim() || part.includes('--\r\n')) return;
+
+    const [headers, ...bodyParts] = part.trim().split('\r\n\r\n');
+    const headerMatch = headers.match(/name="([^"]+)"/);
+    if (headerMatch) {
+      const fieldName = headerMatch[1];
+      const body = bodyParts.join('\r\n\r\n').trim();
+      result[fieldName] = body;
+    }
+  });
+
+  return result;
 }
 
 function initializeDropdown() {
@@ -47,7 +78,6 @@ async function handleFileSelection(fileName) {
 
   try {
     const response = await axios.get('/logs', { params: { fileName } });
-    console.log(response)
     if (response.data) {
       savePreferences(fileName);
       location.reload();
@@ -65,7 +95,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (fileName) {
     const logs = await uploadFileAndFetchLogs(null, fileName);
-    populateTable(logs);
+    populateTable(logs.rows, logs.columns);
   }
 
   if (filterValue) {
@@ -90,5 +120,4 @@ document.getElementById('uploadButton').addEventListener('click', async () => {
   const logs = await uploadFileAndFetchLogs(file);
   location.reload();
   populateTable(logs);
-
 });
