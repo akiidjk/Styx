@@ -27,6 +27,9 @@ def load_logs(file_path, max_lines=MAX_LINES):
             df["time"] = pd.to_datetime(df["time"], unit="s").dt.strftime(
                 "%Y-%m-%d %H:%M:%S"
             )
+
+        df.sort_values(by="time", ascending=False, inplace=True)
+
         return df
     except Exception as e:
         print(f"Error loading logs: {e}")
