@@ -1,0 +1,7 @@
+# Ignore prettier file
+Dockerfile
+pyproject.toml
+requirements.txt
+uv.lock
+static/css/style.min.css
+app.py
