@@ -1,82 +1,142 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" class="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Log Data Viewer</title>
-    <link rel="stylesheet" href="static/index.css">
-    <link rel="stylesheet" href="static/ag-theme.css" />
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.23/dist/full.min.css" rel="stylesheet" type="text/css" />
+
+    <link rel="stylesheet" href="static/css/ag-theme.css" />
+    <link rel="stylesheet" href="static/css/style.min.css" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/daisyui@4.12.23/dist/full.min.css"
+      rel="stylesheet"
+      type="text/css"
+    />
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/ag-grid-community/dist/ag-grid-community.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.0.4/pako.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" integrity="sha512-dfX5uYVXzyU8+KHqj8bjo7UkOdg18PaOtpa48djpNbZHwExddghZ+ZmzWT06R5v6NSk3ZUfsH6FNEDepLx9hPQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js"></script>
-</head>
-<body class="p-6">
+  </head>
+  <body class="p-6">
     <!-- Notifiche -->
     <div class="absolute right-4">
-        <div id="alert-success" role="alert" class="alert alert-success hidden items-center gap-3 p-4 border text-white font-bold rounded-md shadow-md">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="h-6 w-6 shrink-0 stroke-current text-green-500">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-          <span class="text-sm font-medium">Loaded tables successfully.</span>
-        </div>
+      <div
+        id="alert-success"
+        role="alert"
+        class="alert alert-success hidden items-center gap-3 p-4 border text-white font-bold rounded-md shadow-md"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          class="h-6 w-6 shrink-0 stroke-current text-green-500"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          ></path>
+        </svg>
+        <span class="text-sm font-medium">Loaded tables successfully.</span>
+      </div>
     </div>
     <div class="absolute right-4">
-        <div id="alert-error" role="alert" class="alert alert-error hidden items-center gap-3 p-4 border text-white font-bold rounded-md shadow-md">
-           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="h-6 w-6 shrink-0 stroke-current text-red-500">
-             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-           </svg>
-           <span class="text-sm font-medium">An error occurred. Please try again.</span>
-         </div>
+      <div
+        id="alert-error"
+        role="alert"
+        class="alert alert-error hidden items-center gap-3 p-4 border text-white font-bold rounded-md shadow-md"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          class="h-6 w-6 shrink-0 stroke-current text-red-500"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          ></path>
+        </svg>
+        <span class="text-sm font-medium"
+          >An error occurred. Please try again.</span
+        >
+      </div>
     </div>
 
     <div class="container mx-auto h-screen">
-        <h1 id="title" class="text-3xl font-bold mb-4 text-gray-200">Structured Log Viewer</h1>
-        <input type="file" id="logFile" class="file-input file-input-bordered file-input-md w-full max-w-xs mt-5 mb-5" />
-        <button id="uploadButton" class="btn btn-primary mt-2 ml-4">Upload and View Logs</button>
-        <div class="dropdown dropdown-hover">
-          <button tabindex="0" class="btn btn-accent btn-outline m-1 ml-2">Load a file from the logs dir</button>
-          <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-[3] w-52 p-2 shadow">
-            {%- if file_list|length == 0 %}
-                <li><span class="text-gray-500">No files available</span></li>
-            {%- else %}
-                {%- for file in file_list %}
-                    <li><a data-file="{{ file }}" class="dropdown-item">{{ file }}</a></li>
-                {%- endfor %}
-            {%- endif %}
-          </ul>
-        </div>
+      <h1 id="title" class="text-3xl font-bold mb-4 text-gray-200">
+        Structured Log Viewer
+      </h1>
+      <input
+        type="file"
+        id="logFile"
+        class="file-input file-input-bordered file-input-md w-full max-w-xs mt-5 mb-5"
+      />
+      <button id="uploadButton" class="btn btn-primary mt-2 ml-4">
+        Upload and View Logs
+      </button>
+      <div class="dropdown dropdown-hover">
+        <button tabindex="0" class="btn btn-accent btn-outline m-1 ml-2">
+          Load a file from the logs dir
+        </button>
+        <ul
+          tabindex="0"
+          class="dropdown-content menu bg-base-100 rounded-box z-[3] w-52 p-2 shadow"
+        >
+          {%- if file_list|length == 0 %}
+          <li><span class="text-gray-500">No files available</span></li>
+          {%- else %} {%- for file in file_list %}
+          <li>
+            <a data-file="{{ file }}" class="dropdown-item">{{ file }}</a>
+          </li>
+          {%- endfor %} {%- endif %}
+        </ul>
+      </div>
 
-        <button id="exportButton" class="btn btn-secondary ml-2"> Export in CSV </button>
-        <div class="dropdown">
-          <div tabindex="0" role="button" class="btn btn-active btn-ghost m-1 ml-2">Edit columns</div>
-          <ul tabindex="0" id="columnDropdown" class="dropdown-content menu bg-base-100 rounded-box z-[3] w-52 p-2 shadow">
-            <!-- Dynamically populated column toggles -->
-          </ul>
+      <button id="exportButton" class="btn btn-secondary ml-2">
+        Export in CSV
+      </button>
+      <button id="clearFilter" class="btn btn-ghost ml-2">Clear filters</button>
+      <div class="dropdown">
+        <div
+          tabindex="0"
+          role="button"
+          class="btn btn-active btn-ghost m-1 ml-2"
+        >
+          Edit columns
         </div>
-        <div>
-            <table id="logGrid" class="ag-theme-custom-dark min-h-[70vh] z-[-1]">
-                <thead>
-                    <tr>
-                        <!-- Dynamically populated column headers -->
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Dynamically populated log data -->
-                </tbody>
-            </table>
-        </div>
+        <ul
+          tabindex="0"
+          id="columnDropdown"
+          class="dropdown-content menu bg-base-100 rounded-box z-[3] w-52 p-2 shadow"
+        >
+          <!-- Dynamically populated column toggles -->
+        </ul>
+      </div>
+      <span
+        class="loading loading-spinner text-accent absolute top-[50vh] left-[50vw] loading-lg"
+      ></span>
+      <div>
+        <table id="logGrid" class="ag-theme-custom-dark min-h-[70vh] z-[-1]">
+          <thead>
+            <tr>
+              <!-- Dynamically populated column headers -->
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Dynamically populated log data -->
+          </tbody>
+        </table>
+      </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@33.0.3/dist/ag-grid-community.min.js"></script>
     <script src="static/js/index.js" defer></script>
     <script src="static/js/errors.js" defer></script>
     <script src="static/js/cookies.js" defer></script>
-    <script src="static/js/filters.js" defer></script>
     <script src="static/js/table.js" defer></script>
-</body>
+  </body>
 </html>
