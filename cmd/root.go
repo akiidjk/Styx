@@ -1,5 +1,5 @@
 /*
-Copyright © 2024 NAME HERE akiidjk@proton.me
+Copyright © 2024 Akiidjk akiidjk@proton.me
 */
 package cmd
 
@@ -7,11 +7,12 @@ import (
 	"os"
 
 	ebpfModule "github.com/akiidjk/styx/internal/ebpf"
+	"github.com/akiidjk/styx/internal/utils"
 	"github.com/spf13/cobra"
 )
 
 var ifname string
-var ipToBlock string
+var blockIPs []string
 
 var rootCmd = &cobra.Command{
 	Use:   "styx",
@@ -23,8 +24,7 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		ebpfModule.Collect(ifname, ipToBlock)
-		// ebpfmoduleuser.Count()
+		ebpfModule.RunPacketFilter(ifname, blockIPs)
 	},
 }
 
@@ -36,8 +36,10 @@ func Execute() {
 }
 
 func init() {
-	// Flags defining
+
+	go utils.HandleTerminate()
+
 	rootCmd.PersistentFlags().StringVarP(&ifname, "ifname", "i", "", "Interface to be observed")
-	rootCmd.MarkFlagsOneRequired("ifname")
-	rootCmd.PersistentFlags().StringVarP(&ipToBlock, "rule", "r", "", "Ip to block")
+	rootCmd.MarkFlagRequired("ifname")
+	rootCmd.PersistentFlags().StringSliceVarP(&blockIPs, "block-ips", "b", []string{}, "List of IPs to block")
 }
