@@ -29,6 +29,7 @@ struct {
 
 SEC("xdp")
 int xdp_filter_ip(struct xdp_md *ctx) {
+  bpf_printk("FILTERING....\n");
   void *data = (void *)(long)ctx->data;
   void *data_end = (void *)(long)ctx->data_end;
   __u32 key = 0;
