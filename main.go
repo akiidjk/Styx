@@ -1,5 +1,5 @@
 /*
-Copyright © 2024 NAME HERE akiidjk@proton.me
+Copyright © 2024 akiidjk akiidjk@proton.me
 */
 package main
 
@@ -27,18 +27,16 @@ func init() {
 
 ` + "\033[0m")
 
-	eiud := os.Geteuid()
-	if eiud != 0 {
-		l.Fatal().Msg("Remember to run the program with `sudo` or with root")
-		os.Exit(1)
-
-		l.Debug().Msg("Remember to run the program with `sudo` or with root")
+	if os.Geteuid() != 0 {
+		l.Fatal().Msg("Run with sudo or as root")
 	}
 
-	// Remove resource limits for kernels <5.11.
 	if err := rlimit.RemoveMemlock(); err != nil {
 		l.Fatal().Err(err).Msg("Removing memlock")
-		os.Exit(1)
+	}
+
+	if err := os.Remove("/sys/fs/bpf/shared_events"); err != nil && !os.IsNotExist(err) {
+		l.Fatal().Err(err).Msg("Removing shared_events")
 	}
 }
 
