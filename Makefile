@@ -10,6 +10,7 @@ GO_CLEAN := $(GO_CMD) clean
 GO_FILES := $(shell find . -name '*.go' -not -path './vendor/*')
 BUILD_DIR := bin
 LOG_DIR := /var/log/$(APP_NAME)
+GEN_DIR := internal/ebpf/generated
 MAIN_FILE := main.go
 GENERATE_DIR := internal/ebpf/generated
 CONVERT_SCRIPT := convert_to_public.sh
@@ -65,7 +66,7 @@ generate:
 	@echo -e "$(GREEN)✅ Code generation complete!$(RESET)"
 
 # Clean build files
-clean:
+clean_bin:
 	@echo -e "$(RED)🧹 Cleaning up...$(RESET)"
 	@$(GO_CLEAN)
 	@rm -rf $(BUILD_DIR)
@@ -76,6 +77,13 @@ clean_logs:
 	@echo -e "$(RED)🧹 Cleaning up logs...$(RESET)"
 	@sudo rm -rf $(LOG_DIR)/*
 	@echo -e "$(GREEN)✅ Clean complete!$(RESET)"
+
+clean_gen_obj:
+	@echo -e "$(RED)🧹 Cleaning up logs...$(RESET)"
+	@find $(GEN_DIR) -type f ! -name 'gen.go' -exec rm -rf {} +
+	@echo -e "$(GREEN)✅ Clean complete!$(RESET)"
+
+clean: clean_bin clean_logs clean_gen_ebj
 
 # Run the application
 run: build
@@ -94,12 +102,15 @@ help:
 	@echo -e "$(BOLD)Usage:$(RESET)"
 	@echo -e "$(YELLOW)  make$(RESET)            Build the application (default)"
 	@echo -e "$(YELLOW)  make build$(RESET)      Build the application"
+	@echo -e "$(YELLOW)  make build-prod$(RESET) Build the application for production"
 	@echo -e "$(YELLOW)  make run$(RESET)        Run the application"
 	@echo -e "$(YELLOW)  make test$(RESET)       Run tests"
 	@echo -e "$(YELLOW)  make lint$(RESET)       Run linter"
 	@echo -e "$(YELLOW)  make fmt$(RESET)        Format code"
 	@echo -e "$(YELLOW)  make generate$(RESET)   Run go generate"
 	@echo -e "$(YELLOW)  make clean$(RESET)      Clean build files"
+	@echo -e "$(YELLOW)  make clean_bin$(RESET)  Clean build files"
+	@echo -e "$(YELLOW)  make clean_logs$(RESET) Clean logs"
 	@echo -e "$(YELLOW)  make vendor$(RESET)     Vendor dependencies"
 
 .PHONY: all build test lint fmt generate clean run vendor help
