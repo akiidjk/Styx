@@ -19,12 +19,12 @@ type LogEvent struct {
 	Message   [128]byte
 }
 
-func LoadEBPFObjectsFilterIp() (*ebpfGenerated.FilteripObjects, error) {
+func LoadEBPFObjectsFilterIp() *ebpfGenerated.FilteripObjects {
 	var objs ebpfGenerated.FilteripObjects
 	if err := ebpfGenerated.LoadFilteripObjects(&objs, nil); err != nil {
-		return nil, err
+		logger.Fatal().Err(err).Msg("Failed to load eBPF objects")
 	}
-	return &objs, nil
+	return &objs
 }
 
 func setupPerfReader(perfMap *ebpf.Map) (*perf.Reader, error) {
@@ -75,17 +75,10 @@ func handlePerfEvents(reader *perf.Reader) {
 }
 
 func RunPacketFilterIP(ifname string, blockedIPs []string) {
-	ebpfObjects, err := LoadEBPFObjectsFilterIp()
-	if err != nil {
-		logger.Fatal().Err(err).Msg("Failed to load eBPF objects")
-	}
+	ebpfObjects := LoadEBPFObjectsFilterIp()
 	defer ebpfObjects.Close()
 
 	link := utils.LinkInterface(ifname, ebpfObjects.XdpFilterIp)
-
-	if err != nil {
-		logger.Fatal().Err(err).Msg("Failed to attach eBPF program")
-	}
 	defer link.Close()
 
 	perfReader, err := setupPerfReader(ebpfObjects.FilteripMaps.EventOutputMap)
