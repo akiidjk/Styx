@@ -6,50 +6,38 @@ import (
 	"github.com/cilium/ebpf"
 )
 
-func LoadEBPFObjectsDispacher() (*ebpfGenerated.DispacherObjects, error) {
+/*
+Load the eBPF objects for the dispacher program
+*/
+func LoadEBPFObjectsDispacher() *ebpfGenerated.DispacherObjects {
 	var objs ebpfGenerated.DispacherObjects
 	if err := ebpfGenerated.LoadDispacherObjects(&objs, nil); err != nil {
-		return nil, err
+		logger.Fatal().Err(err).Msg("Failed to load eBPF objects")
 	}
-	return &objs, nil
+	return &objs
+}
+
+/*
+Update the program array with the new programs
+*/
+func addPrograms(programs []*ebpf.Program, programMap *ebpf.Map) {
+
+	for index, program := range programs {
+		if err := programMap.Update(uint32(index), program, ebpf.UpdateAny); err != nil {
+			logger.Fatal().Err(err).Msg("Failed to update program array")
+		}
+	}
 }
 
 func Dispach(ifname string) {
-
-	objDispacher, err := LoadEBPFObjectsDispacher()
+	dispacherObj, err := GetObject[*ebpfGenerated.DispacherObjects]("Dispacher")
 	if err != nil {
-		logger.Fatal().Err(err).Msg("Failed to load eBPF objects")
+		logger.Fatal().Err(err).Msg("Failed to get Dispacher object")
 	}
-	defer objDispacher.Close()
-
-	ebpfFilterIp, err := LoadEBPFObjectsFilterIp()
-	if err != nil {
-		logger.Fatal().Err(err).Msg("Failed to load eBPF objects")
-	}
-	defer ebpfFilterIp.Close()
-
-	ebpfFilterMac, err := loadEBPFObjectsFilterMac()
-	if err != nil {
-		logger.Fatal().Err(err).Msg("Failed to load eBPF objects")
-	}
-	defer ebpfFilterMac.Close()
-
-	if err = objDispacher.ProgArray.Update(uint32(0), ebpfFilterIp.XdpFilterIp, ebpf.UpdateAny); err != nil {
-		logger.Fatal().Err(err).Msg("Failed to update program array")
-	}
-
-	if err = objDispacher.ProgArray.Update(uint32(1), ebpfFilterMac.XdpFilterMac, ebpf.UpdateAny); err != nil {
-		logger.Fatal().Err(err).Msg("Failed to update program array")
-	}
-
-	link := utils.LinkInterface(ifname, objDispacher.XdpDispach)
-
-	if err != nil {
-		logger.Fatal().Err(err).Msg("Failed to attach eBPF program")
-	}
+	addPrograms(GetPrograms(), (*dispacherObj).ProgArray)
+	link := utils.LinkInterface(ifname, (*dispacherObj).XdpDispach)
 	defer link.Close()
 
 	for {
 	}
-
 }
