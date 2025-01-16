@@ -22,6 +22,7 @@ func LinkInterface(ifname string, program *ebpf.Program) link.Link {
 		Program:   program,
 		Interface: iface.Index,
 	})
+
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Attaching XDP")
 		os.Exit(1)

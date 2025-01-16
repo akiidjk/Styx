@@ -9,7 +9,6 @@ import (
 	ebpfGenerated "github.com/akiidjk/styx/internal/ebpf/generated"
 	"github.com/akiidjk/styx/internal/utils"
 	"github.com/cilium/ebpf"
-	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/perf"
 )
 
@@ -20,20 +19,15 @@ type LogEvent struct {
 	Message   [128]byte
 }
 
-func LoadEBPFObjects() (*ebpfGenerated.FilteripObjects, error) {
+func LoadEBPFObjectsFilterIp() *ebpfGenerated.FilteripObjects {
 	var objs ebpfGenerated.FilteripObjects
 	if err := ebpfGenerated.LoadFilteripObjects(&objs, nil); err != nil {
-		return nil, err
+		logger.Fatal().Err(err).Msg("Failed to load eBPF objects")
 	}
-	return &objs, nil
+	return &objs
 }
 
-func AttachEBPFProgram(ifname string, filterProg *ebpf.Program) (link.Link, error) {
-	link := utils.LinkInterface(ifname, filterProg)
-	return link, nil
-}
-
-func SetupPerfReader(perfMap *ebpf.Map) (*perf.Reader, error) {
+func setupPerfReader(perfMap *ebpf.Map) (*perf.Reader, error) {
 	reader, err := perf.NewReader(perfMap, os.Getpagesize()*8)
 	if err != nil {
 		return nil, err
@@ -41,7 +35,7 @@ func SetupPerfReader(perfMap *ebpf.Map) (*perf.Reader, error) {
 	return reader, nil
 }
 
-func UpdateIPFilterMap(ips []string, arrayMap *ebpf.Map) error {
+func updateIPFilterMap(ips []string, arrayMap *ebpf.Map) error {
 	for i, ipStr := range ips {
 		ip, err := utils.IpToDecimal(ipStr)
 		if err != nil {
@@ -55,7 +49,7 @@ func UpdateIPFilterMap(ips []string, arrayMap *ebpf.Map) error {
 	return nil
 }
 
-func HandlePerfEvents(reader *perf.Reader) {
+func handlePerfEvents(reader *perf.Reader) {
 	for {
 		record, err := reader.Read()
 		if err != nil {
@@ -80,29 +74,23 @@ func HandlePerfEvents(reader *perf.Reader) {
 	}
 }
 
-func RunPacketFilter(ifname string, blockedIPs []string) {
-	ebpfObjects, err := LoadEBPFObjects()
-	if err != nil {
-		logger.Fatal().Err(err).Msg("Failed to load eBPF objects")
-	}
+func RunPacketFilterIP(ifname string, blockedIPs []string) {
+	ebpfObjects := LoadEBPFObjectsFilterIp()
 	defer ebpfObjects.Close()
 
-	link, err := AttachEBPFProgram(ifname, ebpfObjects.XdpFilterIp)
-	if err != nil {
-		logger.Fatal().Err(err).Msg("Failed to attach eBPF program")
-	}
+	link := utils.LinkInterface(ifname, ebpfObjects.XdpFilterIp)
 	defer link.Close()
 
-	perfReader, err := SetupPerfReader(ebpfObjects.FilteripMaps.EventOutputMap)
+	perfReader, err := setupPerfReader(ebpfObjects.FilteripMaps.EventOutputMap)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Failed to create perf event reader")
 	}
 	defer perfReader.Close()
 
-	if err := UpdateIPFilterMap(blockedIPs, ebpfObjects.FilteripMaps.IpFilterMap); err != nil {
+	if err := updateIPFilterMap(blockedIPs, ebpfObjects.FilteripMaps.IpFilterMap); err != nil {
 		logger.Fatal().Err(err).Msg("Failed to update filter map")
 	}
 
 	logger.Info().Str("Interface", ifname).Msg("Starting packet filter")
-	HandlePerfEvents(perfReader)
+	handlePerfEvents(perfReader)
 }
