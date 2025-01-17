@@ -18,14 +18,10 @@
 //   __uint(max_entries, 1024);
 // } mac_filter_map SEC(".maps");
 
-// struct {
-//   __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
-//   __uint(max_entries, 0);
-// } event_output_map SEC(".maps");
-
 SEC("xdp")
 int xdp_filter_mac(struct xdp_md *ctx) {
   bpf_printk("FILTERING....MAC \n");
+
   void *data = (void *)(long)ctx->data;
   void *data_end = (void *)(long)ctx->data_end;
   __u32 key = 0;
