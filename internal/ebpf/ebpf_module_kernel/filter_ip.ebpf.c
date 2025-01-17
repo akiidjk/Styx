@@ -6,9 +6,14 @@
 #define MAX_PAYLOAD_SIZE 2048
 #define MAX_FILTERS 1024
 
+struct {
+  __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
+  __uint(max_entries, 16);
+  __uint(pinning, LIBBPF_PIN_BY_NAME);
+} event_output SEC(".maps");
+
 // Structs
 struct log_event {
-  __u64 timestamp;
   __u32 src_ip;
   __u32 filter_ip;
   char message[128];
@@ -22,14 +27,10 @@ struct {
   __uint(max_entries, 1024);
 } ip_filter_map SEC(".maps");
 
-struct {
-  __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
-  __uint(max_entries, 0);
-} event_output_map SEC(".maps");
-
 SEC("xdp")
 int xdp_filter_ip(struct xdp_md *ctx) {
   bpf_printk("FILTERING....\n");
+
   void *data = (void *)(long)ctx->data;
   void *data_end = (void *)(long)ctx->data_end;
   __u32 key = 0;
@@ -63,11 +64,10 @@ int xdp_filter_ip(struct xdp_md *ctx) {
       break;
     }
 
-    event.timestamp = bpf_ktime_get_ns();
     event.src_ip = src_ip;
     event.filter_ip = *value;
     __builtin_memcpy(event.message, "Valori degli IP", 15);
-    bpf_perf_event_output(ctx, &event_output_map, BPF_F_CURRENT_CPU, &event,
+    bpf_perf_event_output(ctx, &event_output, BPF_F_CURRENT_CPU, &event,
                           sizeof(event));
 
     if (src_ip == *value) {
