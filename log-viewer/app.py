@@ -122,6 +122,7 @@ def upload_logs():
 def index():
     """Render the index page for the frontend."""
     file_list = os.listdir(app.config["LOGS_FOLDER"])
+    file_list.sort(reverse=True)
     return render_template("index.html", file_list=file_list)
 
 
