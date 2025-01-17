@@ -10,13 +10,12 @@ import (
 
 var logger = l.GetLogger()
 
-var objects = []string{"FilterIp", "FilterMac", "Dispacher", "FilterPort"}
 var ObjectsEBPFMap = make(map[string]interface{})
 
 /*
 Load all the eBPF objects
 */
-func LoadObjectsEBPF() {
+func LoadObjectsEBPF(objects []string) {
 	logger.Info().Msg("Loading eBPF objects")
 	for index, object := range objects {
 		logger.Debug().Str("object", object).Msg("Loading eBPF object")
@@ -36,14 +35,6 @@ func LoadObjectsEBPF() {
 			Str("object", object).
 			Int("mappings", index).
 			Msg("Successfully loaded eBPF object")
-	}
-
-	if len(ObjectsEBPFMap) != len(objects) {
-		logger.Fatal().
-			Int("loaded_objects", len(ObjectsEBPFMap)).
-			Int("total_objects", len(objects)).
-			Msg("Failed to load all eBPF objects")
-		return
 	}
 
 	if len(ObjectsEBPFMap) == 0 {
@@ -171,4 +162,13 @@ func CloseAllObject() {
 	}
 
 	logger.Info().Msg("Finished closing all eBPF objects")
+}
+
+func GetOutputEventMap() *ebpf.Map {
+	dispacherObject, err := GetObject[*ebpfGenerated.DispacherObjects]("Dispacher")
+	if err != nil {
+		logger.Fatal().Err(err).Msg("Failed to get Dispacher object")
+	}
+	outputMap := (*dispacherObject).EventOutput
+	return outputMap
 }
