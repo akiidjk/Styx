@@ -21,7 +21,12 @@ type LogEvent struct {
 
 func LoadEBPFObjectsFilterIp() *ebpfGenerated.FilteripObjects {
 	var objs ebpfGenerated.FilteripObjects
-	if err := ebpfGenerated.LoadFilteripObjects(&objs, nil); err != nil {
+	opts := ebpf.CollectionOptions{
+		Maps: ebpf.MapOptions{
+			PinPath: "/sys/fs/bpf",
+		},
+	}
+	if err := ebpfGenerated.LoadFilteripObjects(&objs, &opts); err != nil {
 		logger.Fatal().Err(err).Msg("Failed to load eBPF objects")
 	}
 	return &objs
@@ -37,7 +42,7 @@ func setupPerfReader(perfMap *ebpf.Map) (*perf.Reader, error) {
 
 func updateIPFilterMap(ips []string, arrayMap *ebpf.Map) error {
 	for i, ipStr := range ips {
-		ip, err := utils.IpToDecimal(ipStr)
+		ip, err := utils.Ipv4ToDecimal(ipStr)
 		if err != nil {
 			return err
 		}
@@ -63,31 +68,37 @@ func handlePerfEvents(reader *perf.Reader) {
 			continue
 		}
 
-		message := strings.TrimSpace(string(event.Message[:]))
+		message := strings.Trim(string(event.Message[:]), "\x00")
+
+		srcIp, err := utils.NumberToIpv4(event.SrcIp)
+		if err != nil {
+			logger.Err(err).Msg("Error converting src IP")
+			continue
+		}
+
+		filteredIp, err := utils.NumberToIpv4(event.FilterIp)
+		if err != nil {
+			logger.Err(err).Msg("Error converting filter IP")
+			continue
+		}
+
 		logger.Info().
-			Uint64("Timestamp", event.Timestamp).
-			Uint32("Src IP", event.SrcIp).
-			Uint32("Filter IP", event.FilterIp).
+			Str("Src IP", utils.ReverseIpv4(srcIp)).
+			Str("Filter IP", utils.ReverseIpv4(filteredIp)).
 			Str("Message", message).
 			Msg("Event received")
-
 	}
 }
 
 func RunPacketFilterIP(ifname string, blockedIPs []string) {
-	ebpfObjects := LoadEBPFObjectsFilterIp()
-	defer ebpfObjects.Close()
-
-	link := utils.LinkInterface(ifname, ebpfObjects.XdpFilterIp)
-	defer link.Close()
-
-	perfReader, err := setupPerfReader(ebpfObjects.FilteripMaps.EventOutputMap)
+	ebpfObjects, err := GetObject[*ebpfGenerated.FilteripObjects]("FilterIp")
+	perfReader, err := setupPerfReader(GetOutputEventMap())
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Failed to create perf event reader")
 	}
 	defer perfReader.Close()
 
-	if err := updateIPFilterMap(blockedIPs, ebpfObjects.FilteripMaps.IpFilterMap); err != nil {
+	if err := updateIPFilterMap(blockedIPs, (*ebpfObjects).FilteripMaps.IpFilterMap); err != nil {
 		logger.Fatal().Err(err).Msg("Failed to update filter map")
 	}
 
