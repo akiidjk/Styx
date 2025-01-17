@@ -4,6 +4,9 @@ internal/web/.env
 
 # Bin
 internal/web/bin
+internal/web/tmp
+internal/web/*.db
+internal/web/tailwindcss
 
 #Logs
 logs
