@@ -1,10 +1,11 @@
 package handlers
 
 import (
-	"goth/internal/middleware"
-	"goth/internal/store"
-	"goth/internal/templates"
 	"net/http"
+
+	"github.com/akiidjk/styx/internal/web/internal/middleware"
+	"github.com/akiidjk/styx/internal/web/internal/store"
+	"github.com/akiidjk/styx/internal/web/internal/templates"
 )
 
 type HomeHandler struct{}

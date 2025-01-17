@@ -1,0 +1,63 @@
+package templates
+
+import "github.com/akiidjk/styx/internal/web/internal/middleware"
+
+templ header(title string) {
+	<head>
+		<title>{ title }</title>
+		<meta charset="UTF-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+		<script src="static/script/htmx.min.js" nonce={ middleware.GetHtmxNonce(ctx) }></script>
+		<script src="static/script/response-targets.js" nonce={ middleware.GetResponseTargetsNonce(ctx) }></script>
+		<link rel="stylesheet" href="static/css/style.min.css" nonce={ middleware.GetTwNonce(ctx) }/>
+		// if os.Getenv("env") == "production" {
+		// 	<link rel="stylesheet" href="static/css/style.min.css" nonce={ middleware.GetTwNonce(ctx) }/>
+		// } else {
+		// 	<link rel="stylesheet" href="static/css/style.css" nonce={ middleware.GetTwNonce(ctx) }/>
+		// }
+	</head>
+}
+
+templ footer() {
+	<footer class="bg-primary-600 p-4"></footer>
+}
+
+templ nav() {
+	<nav class="bg-primary-600 p-4">
+		<div class="container flex justify-between">
+			<ol class="flex space-x-4">
+				<li>
+					<a class="text-gray-200" href="/">Home</a>
+				</li>
+				<li>
+					<a class="text-gray-200" href="/about">About</a>
+				</li>
+			</ol>
+			<ol class="flex space-x-4">
+				if middleware.GetUser(ctx) != nil {
+					<li>
+						<button class="text-gray-200" hx-target="body" hx-swap="innerHTML" hx-post="/logout">Logout</button>
+					</li>
+				} else {
+					<li>
+						<a class="text-gray-200" href="/register">Register</a>
+					</li>
+					<li>
+						<a class="text-gray-200" href="/login">Login</a>
+					</li>
+				}
+			</ol>
+		</div>
+	</nav>
+}
+
+templ Layout(contents templ.Component, title string) {
+	@header(title)
+	<body class="flex flex-col h-full">
+		@nav()
+		<main class="flex-1 container ">
+			@contents
+		</main>
+		@footer()
+	</body>
+}

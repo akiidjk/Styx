@@ -3,11 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"goth/internal/config"
-	"goth/internal/handlers"
-	"goth/internal/hash/passwordhash"
-	database "goth/internal/store/db"
-	"goth/internal/store/dbstore"
 	"log/slog"
 	"net/http"
 	"os"
@@ -16,7 +11,13 @@ import (
 	"syscall"
 	"time"
 
-	m "goth/internal/middleware"
+	"github.com/akiidjk/styx/internal/web/internal/config"
+	"github.com/akiidjk/styx/internal/web/internal/handlers"
+	"github.com/akiidjk/styx/internal/web/internal/hash/passwordhash"
+	database "github.com/akiidjk/styx/internal/web/internal/store/db"
+	"github.com/akiidjk/styx/internal/web/internal/store/dbstore"
+
+	m "github.com/akiidjk/styx/internal/web/internal/middleware"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
